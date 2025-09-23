@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Беспутный — Чтение</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>Беспутный</h1>
+  <img src="cover.jpg" alt="Обложка Беспутного" class="cover">
+</header>
+
+<section id="auth-section">
+  <h2>Вход</h2>
+  <input type="email" id="login-email" placeholder="Email">
+  <input type="password" id="login-password" placeholder="Пароль">
+  <button id="login-btn">Войти</button>
+
+  <h2>Регистрация</h2>
+  <input type="email" id="register-email" placeholder="Email">
+  <input type="password" id="register-password" placeholder="Пароль">
+  <button id="register-btn">Зарегистрироваться</button>
+</section>
+
+<section id="content-section" style="display:none;">
+  <p>Вы вошли!</p>
+  <button id="logout-btn">Выйти</button>
+</section>
+
+<section id="chapters-container" style="display:none;">
+  <p>Загрузка глав...</p>
+</section>
+
+<section id="adminPanel" class="admin-panel" style="display:none;">
+  <h2>Панель администратора</h2>
+  <p>Здесь админ может редактировать и добавлять главы.</p>
+  <button onclick="alert('Добавить главу')">Добавить главу</button>
+</section>
+
+<script type="module" src="supabase-config.js"></script>
+<script type="module" src="script.js"></script>
+<script type="module">
+  import { supabase } from './supabase-config.js'
+
+  // Загрузка глав
+  async function loadChapters() {
+    const { data, error } = await supabase.from('chapters').select('*').order('id')
+    const container = document.getElementById('chapters-container')
+    if (error) {
+      container.innerHTML = `<p>Ошибка загрузки глав: ${error.message}</p>`
+      return
+    }
+
+    container.innerHTML = ''
+    if (data && data.length > 0) {
+      data.forEach(ch => {
+        const div = document.createElement('div')
+        div.className = 'chapter'
+        div.innerHTML = `<h3>${ch.title}</h3><p>${ch.content}</p>`
+        container.appendChild(div)
+      })
+    } else {
+      container.innerHTML = '<p>Глав пока нет</p>'
+    }
+  }
+
+  // Вход
+  async function loginUser() {
+    const email = document.getElementById('login-email').value
+    const password = document.getElementById('login-password').value
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) {
+      alert("Ошибка входа: " + error.message)
+    } else {
+      document.getElementById('auth-section').style.display = "none"
+      document.getElementById('content-section').style.display = "block"
+      document.getElementById('chapters-container').style.display = "block"
+
+      // Проверяем, админ ли пользователь (можно по email)
+      if(email === "admin@example.com") {
+        document.getElementById('adminPanel').style.display = "block"
+      }
+      loadChapters()
+    }
+  }
+
+  // Регистрация
+  async function registerUser() {
+    const email = document.getElementById('register-email').value
+    const password = document.getElementById('register-password').value
+
+    const { data, error } = await supabase.auth.signUp({ email, password })
+    if (error) {
+      alert("Ошибка регистрации: " + error.message)
+    } else {
+      alert("Регистрация успешна! Войдите с новым аккаунтом.")
+      document.getElementById('register-email').value = ''
+      document.getElementById('register-password').value = ''
+    }
+  }
+
+  // Выход
+  async function logoutUser() {
+    const { error } = await supabase.auth.signOut()
+    if (error) alert("Ошибка выхода: " + error.message)
+    else {
+      document.getElementById('auth-section').style.display = "block"
+      document.getElementById('content-section').style.display = "none"
+      document.getElementById('chapters-container').style.display = "none"
+      document.getElementById('adminPanel').style.display = "none"
+    }
+  }
+
+  // Привязка кнопок
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('login-btn').addEventListener('click', loginUser)
+    document.getElementById('register-btn').addEventListener('click', registerUser)
+    document.getElementById('logout-btn').addEventListener('click', logoutUser)
+  })
+</script>
+
+</body>
+</html>
