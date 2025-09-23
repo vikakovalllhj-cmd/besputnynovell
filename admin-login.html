@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход Админа - Беспутный</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="auth-container">
+        <h1>Вход Админа</h1>
+        <input type="text" id="admin-username" placeholder="Логин">
+        <input type="password" id="admin-password" placeholder="Пароль">
+        <button onclick="adminLogin(
+            document.getElementById('admin-username').value,
+            document.getElementById('admin-password').value
+        )">Войти</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
