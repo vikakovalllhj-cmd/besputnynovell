@@ -1,0 +1,84 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Arial', sans-serif;
+  background: linear-gradient(135deg, #89CFF0, #FFB6C1);
+  color: #333;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+header h1 {
+  text-align: center;
+  margin: 20px 0 10px;
+}
+
+.cover {
+  width: 100%;
+  max-height: 400px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin: 0 auto 20px auto;
+  display: block;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+#auth-section, #content-section, #chapters-container {
+  max-width: 500px;
+  margin: 20px auto;
+  padding: 20px;
+  background: rgba(255,255,255,0.9);
+  border-radius: 10px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+}
+
+#auth-section input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  color: #fff;
+  background: linear-gradient(135deg, #FF69B4, #1E90FF);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+button:hover {
+  transform: scale(1.05);
+}
+
+.chapter {
+  background-color: rgba(255, 255, 255, 0.85);
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.admin-panel {
+  background-color: rgba(255, 255, 255, 0.95);
+  padding: 20px;
+  border-radius: 10px;
+  margin-top: 30px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+}
+
+@media (max-width: 768px) {
+  .cover { max-height: 250px; }
+  #auth-section, #content-section, #chapters-container { padding: 15px; }
+}
