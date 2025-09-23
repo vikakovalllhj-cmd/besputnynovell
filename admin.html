@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Админка — Беспутный</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>Админка — Добавление глав</h1>
+</header>
+
+<section class="container">
+  <h2>Новая глава</h2>
+  <input type="text" id="chapter-title" placeholder="Название главы"><br>
+  <textarea id="chapter-content" placeholder="Содержание главы" rows="6"></textarea><br>
+  <button id="add-chapter-btn">Добавить главу</button>
+  <p id="admin-message"></p>
+</section>
+
+<section class="container">
+  <h2>Список глав</h2>
+  <ul id="chapters-list"></ul>
+</section>
+
+<section class="container">
+  <button id="logout-btn">Выйти из админки</button>
+</section>
+
+<script type="module" src="supabase-config.js"></script>
+<script type="module" src="script.js"></script>
+<script type="module">
+  import { supabase } from './supabase-config.js'
+
+  // Функция добавления главы
+  async function addChapter() {
+    const title = document.getElementById('chapter-title').value
+    const content = document.getElementById('chapter-content').value
+
+    if (!title || !content) {
+      alert("Заполните название и текст главы!")
+      return
+    }
+
+    const { data, error } = await supabase.from('chapters').insert([{ title, content }])
+
+    if (error) {
+      alert("Ошибка: " + error.message)
+    } else {
+      alert("Глава добавлена!")
+      document.getElementById('chapter-title').value = ""
+      document.getElementById('chapter-content').value = ""
+      loadChapters()
+    }
+  }
+
+  // Функция загрузки глав
+  async function loadChapters() {
+    const { data, error } = await supabase.from('chapters').select('*').order('id')
+
+    const list = document.getElementById('chapters-list')
+    if (error) {
+      alert("Ошибка загрузки глав: " + error.message)
+      return
+    }
+
+    list.innerHTML = ''
+    if (data && data.length > 0) {
+      data.forEach(ch => {
+        const li = document.createElement('li')
+        li.innerText = ch.title
+        li.onclick = () => alert(ch.content)
+        list.appendChild(li)
+      })
+    } else {
+      list.innerHTML = '<li>Глав пока нет</li>'
+    }
+  }
+
+  // Привязка кнопок
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('add-chapter-btn').addEventListener('click', addChapter)
+    document.getElementById('logout-btn').addEventListener('click', logoutUser)
+    loadChapters()
+  })
+</script>
+
+</body>
+</html>
