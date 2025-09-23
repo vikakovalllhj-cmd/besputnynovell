@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админка - Беспутный</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="admin-container">
+        <h1>Админка</h1>
+        <input type="text" id="chapter-title" placeholder="Название главы">
+        <textarea id="chapter-content" placeholder="Содержание главы"></textarea>
+        <button onclick="addChapter()">Добавить / Обновить главу</button>
+        <ul id="admin-chapters-list"></ul>
+        <button onclick="logoutAdmin()">Выйти</button>
+        <p id="admin-message"></p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+    <script src="supabase-config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
