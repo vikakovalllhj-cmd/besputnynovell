@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Беспутный - Новелла</title>
+<style>
+body { font-family: Arial, sans-serif; background: linear-gradient(120deg,#ff9ec9,#9ec1ff); margin:0; padding:0; color:#333; }
+header { text-align:center; padding:20px; }
+button { padding:10px 20px; margin:5px; border:none; border-radius:5px; background:#fff; cursor:pointer; }
+button:hover { background:#eee; }
+ul { list-style:none; padding:0; }
+input,textarea { width:90%; margin:5px 0; padding:10px; border-radius:5px; border:1px solid #ccc; }
+.container { max-width:400px; margin:20px auto; background:rgba(255,255,255,0.9); padding:20px; border-radius:10px; text-align:center; }
+.cover { width:150px; border-radius:10px; margin-bottom:10px; }
+h2 { margin-top:0; }
+.chapter { cursor:pointer; padding:5px; border-bottom:1px solid #ccc; }
+.chapter:hover { background:#eee; }
+#admin-section { display:none; }
+</style>
+</head>
+<body>
+
+<header>
+<img src="cover.jpg" alt="Обложка" class="cover">
+<h1>Беспутный</h1>
+</header>
+
+<div id="auth-container" class="container">
+<h2>Вход / Регистрация</h2>
+<input type="email" id="email" placeholder="Email"><br>
+<input type="password" id="password" placeholder="Пароль"><br>
+<button onclick="login()">Войти</button>
+<button onclick="register()">Зарегистрироваться</button>
+<p id="auth-message"></p>
+</div>
+
+<div id="user-section" class="container" style="display:none;">
+<h2>Главы</h2>
+<ul id="chapters-list"></ul>
+<button onclick="logout()">Выйти</button>
+</div>
+
+<div id="admin-section" class="container">
+<h2>Админка</h2>
+<input type="text" id="chapter-title" placeholder="Название главы"><br>
+<textarea id="chapter-content" placeholder="Содержание главы"></textarea><br>
+<button onclick="addChapter()">Добавить / Обновить главу</button>
+<ul id="admin-chapters-list"></ul>
+<button onclick="logoutAdmin()">Выйти из админки</button>
+<p id="admin-message"></p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+<script>
+// Настройки Supabase
+const SUPABASE_URL = 'https://rzooujinsekmgswgbixv.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6b291amluc2VrbWdzd2diaXh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2Mzg3NzIsImV4cCI6MjA3NDIxNDc3Mn0.41o_lwuKZRJENtOtYMVpnZNE7mOz-TJiclCnK_0g08I';
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Админка
+const ADMIN_USERNAME = 'strawberryvodkapp';
+const ADMIN_PASSWORD = '1708enot228';
+
+// ====== Пользовательская авторизация ======
+async function login() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if(error) { document.getElementById('auth-message').innerText = error.message; }
+    else { showUserSection(); loadChapters(); }
+}
+
+async function register() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const { error } = await supabase.auth.signUp({ email, password });
+    if(error) { document.getElementById('auth-message').innerText = error.message; }
+    else { document.getElementById('auth-message').innerText = 'Проверьте email для подтверждения'; }
+}
+
+async function logout() {
+    await supabase.auth.signOut();
+    document.getElementById('auth-container').style.display='block';
+    document.getElementById('user-section').style.display='none';
+}
+
+// ====== Админка ======
+function logoutAdmin() {
+    localStorage.removeItem('isAdmin');
+    document.getElementById('auth-container').style.display='block';
+    document.getElementById('admin-section').style.display='none';
+}
+
+function checkAdmin(username,password){
+    if(username===ADMIN_USERNAME && password===ADMIN_PASSWORD){
+        localStorage.setItem('isAdmin','true');
+        showAdminSection();
+        return true;
+    }
+    return false;
+}
+
+function showUserSection(){
+    document.getElementById('auth-container').style.display='none';
+    document.getElementById('user-section').style.display='block';
+}
+
+function showAdminSection(){
+    document.getElementById('auth-container').style.display='none';
+    document.getElementById('admin-section').style.display='block';
+}
+
+// ====== Загрузка глав ======
+async function loadChapters(){
+    const { data } = await supabase.from('chapters').select('*').order('id');
+    const list = document.getElementById('chapters-list');
+    if(list && data){ 
+        list.innerHTML='';
+        data.forEach(ch=>{
+            const li = document.createElement('li');
+            li.innerText = ch.title;
+            li.className='chapter';
+            li.onclick=()=>alert(ch.content);
+            list.appendChild(li);
+        });
+    }
+}
+
+// ====== Добавление главы (админ) ======
+async function addChapter(){
+    const title = document.getElementById('chapter-title').value;
+    const content = document.getElementById('chapter-content').value;
+    const { error } = await supabase.from('chapters').insert([{ title, content }]);
+    if(error){ document.getElementById('admin-message').innerText = error.message; }
+    else{ document.getElementById('admin-message').innerText = 'Глава добавлена!'; loadChapters(); }
+}
+
+// ====== Простейшая проверка на админа ======
+document.addEventListener('DOMContentLoaded',()=>{
+    const savedAdmin = localStorage.getItem('isAdmin');
+    if(savedAdmin==='true') showAdminSection();
+});
+</script>
+
+</body>
+</html>
