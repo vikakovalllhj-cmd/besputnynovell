@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Беспутный — Чтение</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      background: url('https://i.postimg.cc/C5TDWTgs/201-20250410151052.png') no-repeat center center fixed;
+      background-size: cover;
+      background-attachment: fixed;
+      opacity: 0.95;
+    }
+    .overlay {
+      background: rgba(0,0,0,0.6);
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: -1;
+    }
+    .chapter-card {
+      background: rgba(255,255,255,0.9);
+      border-radius: 10px;
+      padding: 15px;
+      margin: 15px 0;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    .chapter-card h3 {
+      margin: 0 0 10px;
+    }
+    .chapter-card button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #d14f8a;
+      color: white;
+      font-weight: bold;
+    }
+    /* модальное окно */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: #fff;
+      padding: 20px;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
+      border-radius: 12px;
+      position: relative;
+    }
+    .close-btn {
+      position: absolute;
+      top: 10px; right: 10px;
+      background: #d14f8a;
+      border: none;
+      color: #fff;
+      font-size: 16px;
+      border-radius: 50%;
+      width: 30px; height: 30px;
+      cursor: pointer;
+    }
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      padding: 15px;
+      font-size: 14px;
+      color: #fff;
+      background: rgba(0,0,0,0.6);
+    }
+    footer a {
+      color: #ff88c2;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+<div class="overlay"></div>
+
+<header>
+  <div class="shiny-container">
+    <h1>Беспутный</h1>
+    <img src="cover.jpg" alt="Обложка Беспутного" class="cover">
+
+    <!-- Искры/огоньки -->
+    <div class="fire-container">
+      <div class="spark"></div>
+      <div class="spark"></div>
+      <div class="spark"></div>
+      <div class="spark"></div>
+      <div class="spark"></div>
+    </div>
+  </div>
+</header>
+
+<section id="auth-section">
+  <h2>Вход</h2>
+  <input type="email" id="login-email" placeholder="Email">
+  <input type="password" id="login-password" placeholder="Пароль">
+  <button id="login-btn">Войти</button>
+
+  <h2>Регистрация</h2>
+  <input type="email" id="register-email" placeholder="Email">
+  <input type="password" id="register-password" placeholder="Пароль">
+  <button id="register-btn">Зарегистрироваться</button>
+</section>
+
+<section id="content-section" style="display:none;">
+  <p>Вы вошли!</p>
+  <button id="logout-btn">Выйти</button>
+</section>
+
+<section id="chapters-container" style="display:none;">
+  <p>Загрузка глав...</p>
+</section>
+
+<section id="adminPanel" style="display:none;">
+  <h2>Панель администратора</h2>
+  <input type="text" id="new-title" placeholder="Название главы">
+  <textarea id="new-content" placeholder="Текст главы"></textarea>
+  <button id="add-chapter-btn">Добавить главу</button>
+  <div id="edit-chapters"></div>
+</section>
+
+<!-- модальное окно -->
+<div id="chapterModal" class="modal">
+  <div class="modal-content">
+    <button class="close-btn">&times;</button>
+    <h3 id="modalTitle"></h3>
+    <p id="modalContent"></p>
+  </div>
+</div>
+
+<footer>
+  Автор: strawberryvodka | 
+  <a href="https://t.me/strawberryvodka3" target="_blank">Telegram</a>
+</footer>
+
+<script type="module" src="supabase-config.js"></script>
+<script type="module">
+import { supabase } from './supabase-config.js'
+
+const modal = document.getElementById('chapterModal')
+const modalTitle = document.getElementById('modalTitle')
+const modalContent = document.getElementById('modalContent')
+const closeBtn = modal.querySelector('.close-btn')
+
+closeBtn.addEventListener('click', ()=> modal.style.display="none")
+window.addEventListener('click', (e)=> { if(e.target===modal) modal.style.display="none" })
+
+async function loadChapters() {
+  const { data, error } = await supabase.from('chapters').select('*').order('id')
+  const container = document.getElementById('chapters-container')
+  if (error) { container.innerHTML = `<p>Ошибка: ${error.message}</p>`; return }
+  container.innerHTML = ''
+  if (data.length > 0) {
+    data.forEach(ch => {
+      const div = document.createElement('div')
+      div.className = 'chapter-card'
+      div.innerHTML = `<h3>${ch.title}</h3><button>Читать</button>`
+      div.querySelector('button').addEventListener('click', ()=>{
+        modalTitle.textContent = ch.title
+        modalContent.textContent = ch.content
+        modal.style.display = "flex"
+      })
+      container.appendChild(div)
+    })
+  } else container.innerHTML = '<p>Глав пока нет</p>'
+}
+
+async function loadAdminChapters() {
+  const { data } = await supabase.from('chapters').select('*').order('id')
+  const container = document.getElementById('edit-chapters')
+  container.innerHTML = ''
+  data.forEach(ch => {
+    const div = document.createElement('div')
+    div.className = 'chapter-admin'
+    div.innerHTML = `
+      <input type="text" value="${ch.title}" class="edit-title">
+      <textarea class="edit-content">${ch.content}</textarea>
+      <button class="save-btn">Сохранить</button>
+      <button class="delete-btn">Удалить</button>
+    `
+    div.querySelector('.save-btn').addEventListener('click', async () => {
+      const newTitle = div.querySelector('.edit-title').value
+      const newContent = div.querySelector('.edit-content').value
+      const { error } = await supabase.from('chapters').update({title: newTitle, content: newContent}).eq('id', ch.id)
+      if(error) alert('Ошибка обновления: '+error.message)
+      else { alert('Глава обновлена!'); loadChapters(); loadAdminChapters() }
+    })
+    div.querySelector('.delete-btn').addEventListener('click', async () => {
+      const { error } = await supabase.from('chapters').delete().eq('id', ch.id)
+      if(error) alert('Ошибка удаления: '+error.message)
+      else { alert('Глава удалена!'); loadChapters(); loadAdminChapters() }
+    })
+    container.appendChild(div)
+  })
+}
+
+async function loginUser() {
+  const email = document.getElementById('login-email').value
+  const password = document.getElementById('login-password').value
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+  if (error) { alert("Ошибка: " + error.message); return }
+  showUser(email)
+}
+
+async function registerUser() {
+  const email = document.getElementById('register-email').value
+  const password = document.getElementById('register-password').value
+  const { data, error } = await supabase.auth.signUp({ email, password })
+  if (error) alert("Ошибка регистрации: "+error.message)
+  else alert("Регистрация успешна! Войдите с новым аккаунтом.")
+}
+
+async function logoutUser() {
+  const { error } = await supabase.auth.signOut()
+  if(error) alert("Ошибка выхода: "+error.message)
+  else {
+    document.getElementById('auth-section').style.display="block"
+    document.getElementById('content-section').style.display="none"
+    document.getElementById('chapters-container').style.display="none"
+    document.getElementById('adminPanel').style.display="none"
+  }
+}
+
+function showUser(email){
+  document.getElementById('auth-section').style.display="none"
+  document.getElementById('content-section').style.display="block"
+  document.getElementById('chapters-container').style.display="block"
+  loadChapters()
+  if(email==="abadir_2017@mail.ru"){
+    document.getElementById('adminPanel').style.display="block"
+    loadAdminChapters()
+  }
+}
+
+supabase.auth.onAuthStateChange((event, session)=>{
+  if(session) showUser(session.user.email)
+  else {
+    document.getElementById('auth-section').style.display="block"
+    document.getElementById('content-section').style.display="none"
+    document.getElementById('chapters-container').style.display="none"
+    document.getElementById('adminPanel').style.display="none"
+  }
+})
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.getElementById('login-btn').addEventListener('click', loginUser)
+  document.getElementById('register-btn').addEventListener('click', registerUser)
+  document.getElementById('logout-btn').addEventListener('click', logoutUser)
+  document.getElementById('add-chapter-btn').addEventListener('click', async ()=>{
+    const title = document.getElementById('new-title').value
+    const content = document.getElementById('new-content').value
+    const { error } = await supabase.from('chapters').insert([{title, content}])
+    if(error) alert('Ошибка добавления: '+error.message)
+    else {
+      alert('Глава добавлена!')
+      document.getElementById('new-title').value=''
+      document.getElementById('new-content').value=''
+      loadChapters()
+      loadAdminChapters()
+    }
+  })
+})
+</script>
+
+</body>
+</html>
