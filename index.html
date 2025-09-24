@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Беспутный — Чтение</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: url("https://i.postimg.cc/C5TDWTgs/201-20250410151052.png") no-repeat center top;
+      background-size: cover;
+      background-attachment: fixed;
+    }
+
+    header {
+      text-align: center;
+      position: relative;
+      padding: 20px;
+    }
+
+    .cover {
+      max-width: 250px;
+      margin: 15px auto;
+      display: block;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.6);
+    }
+
+    /* Эффект глянца */
+    .shiny-container {
+      position: relative;
+      display: inline-block;
+    }
+
+    .shiny-container h1 {
+      color: white;
+      text-shadow: 0 0 15px rgba(255,255,255,0.8);
+    }
+
+    /* Искры */
+    .fire-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .spark {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: orange;
+      border-radius: 50%;
+      animation: fly 3s infinite;
+    }
+
+    @keyframes fly {
+      0% { transform: translateY(0) scale(1); opacity: 1; }
+      100% { transform: translateY(-200px) scale(0); opacity: 0; }
+    }
+
+    /* Главы */
+    #chapters-container {
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 10px;
+    }
+
+    .chapter {
+      background: rgba(255,255,255,0.9);
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 15px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .chapter h3 {
+      margin-top: 0;
+      cursor: pointer;
+    }
+
+    .chapter p {
+      display: none;
+      white-space: pre-line;
+    }
+
+    .chapter.open p {
+      display: block;
+    }
+
+    /* Автор */
+    footer {
+      text-align: center;
+      padding: 15px;
+      color: white;
+      background: rgba(0,0,0,0.6);
+      margin-top: 30px;
+    }
+
+    footer a {
+      color: #ff9ad9;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="shiny-container">
+    <h1>Беспутный</h1>
+    <img src="cover.jpg" alt="Обложка Беспутного" class="cover">
+
+    <!-- Искры/огоньки -->
+    <div class="fire-container">
+      <div class="spark"></div>
+      <div class="spark"></div>
+      <div class="spark"></div>
+      <div class="spark"></div>
+      <div class="spark"></div>
+    </div>
+  </div>
+</header>
+
+<section id="auth-section">
+  <h2>Вход</h2>
+  <input type="email" id="login-email" placeholder="Email">
+  <input type="password" id="login-password" placeholder="Пароль">
+  <button id="login-btn">Войти</button>
+
+  <h2>Регистрация</h2>
+  <input type="email" id="register-email" placeholder="Email">
+  <input type="password" id="register-password" placeholder="Пароль">
+  <button id="register-btn">Зарегистрироваться</button>
+</section>
+
+<section id="content-section" style="display:none;">
+  <p>Вы вошли!</p>
+  <button id="logout-btn">Выйти</button>
+</section>
+
+<section id="chapters-container" style="display:none;">
+  <p>Загрузка глав...</p>
+</section>
+
+<section id="adminPanel" style="display:none;">
+  <h2>Панель администратора</h2>
+  <input type="text" id="new-title" placeholder="Название главы">
+  <textarea id="new-content" placeholder="Текст главы"></textarea>
+  <button id="add-chapter-btn">Добавить главу</button>
+  <div id="edit-chapters"></div>
+</section>
+
+<footer>
+  Автор: strawberryvodka • <a href="https://t.me/strawberryvodka3" target="_blank">Telegram</a>
+</footer>
+
+<script type="module" src="supabase-config.js"></script>
+<script type="module">
+import { supabase } from './supabase-config.js'
+
+async function loadChapters() {
+  const { data, error } = await supabase.from('chapters').select('*').order('id')
+  const container = document.getElementById('chapters-container')
+  if (error) { container.innerHTML = `<p>Ошибка: ${error.message}</p>`; return }
+  container.innerHTML = ''
+  if (data.length > 0) {
+    data.forEach(ch => {
+      const div = document.createElement('div')
+      div.className = 'chapter'
+      div.innerHTML = `<h3>${ch.title}</h3><p>${ch.content}</p>`
+      div.querySelector('h3').addEventListener('click', ()=>{
+        div.classList.toggle('open')
+      })
+      container.appendChild(div)
+    })
+  } else container.innerHTML = '<p>Глав пока нет</p>'
+}
+
+async function loadAdminChapters() {
+  const { data } = await supabase.from('chapters').select('*').order('id')
+  const container = document.getElementById('edit-chapters')
+  container.innerHTML = ''
+  data.forEach(ch => {
+    const div = document.createElement('div')
+    div.className = 'chapter-admin'
+    div.innerHTML = `
+      <input type="text" value="${ch.title}" class="edit-title">
+      <textarea class="edit-content">${ch.content}</textarea>
+      <button class="save-btn">Сохранить</button>
+      <button class="delete-btn">Удалить</button>
+    `
+    div.querySelector('.save-btn').addEventListener('click', async () => {
+      const newTitle = div.querySelector('.edit-title').value
+      const newContent = div.querySelector('.edit-content').value
+      const { error } = await supabase.from('chapters').update({title: newTitle, content: newContent}).eq('id', ch.id)
+      if(error) alert('Ошибка обновления: '+error.message)
+      else { alert('Глава обновлена!'); loadChapters(); loadAdminChapters() }
+    })
+    div.querySelector('.delete-btn').addEventListener('click', async () => {
+      const { error } = await supabase.from('chapters').delete().eq('id', ch.id)
+      if(error) alert('Ошибка удаления: '+error.message)
+      else { alert('Глава удалена!'); loadChapters(); loadAdminChapters() }
+    })
+    container.appendChild(div)
+  })
+}
+
+async function loginUser() {
+  const email = document.getElementById('login-email').value
+  const password = document.getElementById('login-password').value
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+  if (error) { alert("Ошибка: " + error.message); return }
+  showUser(email)
+}
+
+async function registerUser() {
+  const email = document.getElementById('register-email').value
+  const password = document.getElementById('register-password').value
+  const { data, error } = await supabase.auth.signUp({ email, password })
+  if (error) alert("Ошибка регистрации: "+error.message)
+  else alert("Регистрация успешна! Войдите с новым аккаунтом.")
+}
+
+async function logoutUser() {
+  const { error } = await supabase.auth.signOut()
+  if(error) alert("Ошибка выхода: "+error.message)
+  else {
+    document.getElementById('auth-section').style.display="block"
+    document.getElementById('content-section').style.display="none"
+    document.getElementById('chapters-container').style.display="none"
+    document.getElementById('adminPanel').style.display="none"
+  }
+}
+
+function showUser(email){
+  document.getElementById('auth-section').style.display="none"
+  document.getElementById('content-section').style.display="block"
+  document.getElementById('chapters-container').style.display="block"
+  loadChapters()
+  if(email==="abadir_2017@mail.ru"){
+    document.getElementById('adminPanel').style.display="block"
+    loadAdminChapters()
+  }
+}
+
+// 🔥 Проверка сохранённой сессии при загрузке
+document.addEventListener('DOMContentLoaded', async ()=>{
+  const { data: { session } } = await supabase.auth.getSession()
+  if(session){
+    showUser(session.user.email)
+  } else {
+    document.getElementById('auth-section').style.display="block"
+    document.getElementById('content-section').style.display="none"
+    document.getElementById('chapters-container').style.display="none"
+    document.getElementById('adminPanel').style.display="none"
+  }
+
+  document.getElementById('login-btn').addEventListener('click', loginUser)
+  document.getElementById('register-btn').addEventListener('click', registerUser)
+  document.getElementById('logout-btn').addEventListener('click', logoutUser)
+  document.getElementById('add-chapter-btn').addEventListener('click', async ()=>{
+    const title = document.getElementById('new-title').value
+    const content = document.getElementById('new-content').value
+    const { error } = await supabase.from('chapters').insert([{title, content}])
+    if(error) alert('Ошибка добавления: '+error.message)
+    else {
+      alert('Глава добавлена!')
+      document.getElementById('new-title').value=''
+      document.getElementById('new-content').value=''
+      loadChapters()
+      loadAdminChapters()
+    }
+  })
+})
+</script>
+
+</body>
+</html>
